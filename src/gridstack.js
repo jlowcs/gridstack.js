@@ -670,7 +670,7 @@
             return;
         }
 
-        var cell_width, cell_height;
+        var cell_width, cell_height, grid_height;
         var dragBox, startPos;
 
         var on_start_moving = function(event, ui) {
@@ -691,6 +691,8 @@
             startPos = {x: node.x, y: node.y};
 
             dragBox = self.opts.drag_constraint && $(self.opts.drag_constraint)[0].getBoundingClientRect();
+
+            grid_height = parseInt(self.container.attr('data-gs-current-height'));
 
             el.resizable('option', 'minWidth', cell_width * (node.min_width || 1));
             el.resizable('option', 'minHeight', strict_cell_height * (node.min_height || 1));
@@ -721,6 +723,8 @@
             drag: function(event, ui) {
                 var x = event.clientX, y = event.clientY;
                 if (dragBox && (x < dragBox.left || x > dragBox.right || y < dragBox.top || y > dragBox.bottom)) {
+                    //must move at the end before moving it back to initial position
+                    self.grid.move_node(node, 0, grid_height);
                     self.grid.move_node(node, startPos.x, startPos.y);
                     self._update_container_height();
                     return ;
