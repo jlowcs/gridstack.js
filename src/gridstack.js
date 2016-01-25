@@ -419,7 +419,8 @@
                 handle: (opts.handle_class ? '.' + opts.handle_class : (opts.handle ? opts.handle : '')) || '.grid-stack-item-content',
                 scroll: false,
                 appendTo: 'body'
-            })
+            }),
+            drag_constraint: opts.drag_constraint || undefined
         });
         this.opts.is_nested = is_nested;
 
@@ -670,6 +671,7 @@
         }
 
         var cell_width, cell_height;
+        var dragBox, startPos;
 
         var on_start_moving = function(event, ui) {
             self.container.append(self.placeholder);
@@ -686,6 +688,9 @@
                 .attr('data-gs-height', o.attr('data-gs-height'))
                 .show();
             node.el = self.placeholder;
+            startPos = {x: node.x, y: node.y};
+
+            dragBox = self.opts.drag_constraint && $(self.opts.drag_constraint)[0].getBoundingClientRect();
 
             el.resizable('option', 'minWidth', cell_width * (node.min_width || 1));
             el.resizable('option', 'minHeight', strict_cell_height * (node.min_height || 1));
@@ -705,6 +710,8 @@
             self._update_container_height();
             self._trigger_change_event();
 
+            dragBox = undefined;
+
             self.grid.end_update();
         };
 
@@ -712,6 +719,12 @@
             start: on_start_moving,
             stop: on_end_moving,
             drag: function(event, ui) {
+                var x = event.clientX, y = event.clientY;
+                if (dragBox && (x < dragBox.left || x > dragBox.right || y < dragBox.top || y > dragBox.bottom)) {
+                    self.grid.move_node(node, startPos.x, startPos.y);
+                    self._update_container_height();
+                    return ;
+                }
                 var x = Math.round(ui.position.left / cell_width),
                     y = Math.floor((ui.position.top + cell_height / 2) / cell_height);
                 if (!self.grid.can_move_node(node, x, y, node.width, node.height)) {
